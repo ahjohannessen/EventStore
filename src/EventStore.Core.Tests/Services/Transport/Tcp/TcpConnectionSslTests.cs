@@ -38,6 +38,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 					(IPEndPoint)listeningSocket.LocalEndPoint,
 					"localhost",
 					false,
+					null,
 					new TcpClientConnector(),
 					TimeSpan.FromSeconds(5),
 					(conn) => {
@@ -49,7 +50,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 
 				var serverSocket = listeningSocket.Accept();
 				var serverTcpConnection = TcpConnectionSsl.CreateServerFromSocket(Guid.NewGuid(),
-					(IPEndPoint)serverSocket.RemoteEndPoint, serverSocket, GetCertificate(), false);
+					(IPEndPoint)serverSocket.RemoteEndPoint, serverSocket, GetCertificate(), false, false);
 
 				try {
 					clientTcpConnection.ConnectionClosed += (connection, error) => {

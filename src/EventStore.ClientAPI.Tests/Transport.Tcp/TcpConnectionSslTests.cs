@@ -52,7 +52,7 @@ namespace EventStore.ClientAPI.Tests.Services.Transport.Tcp {
 
 				var serverSocket = listeningSocket.Accept();
 				var serverTcpConnection = TcpConnectionSsl.CreateServerFromSocket(Guid.NewGuid(),
-					(IPEndPoint)serverSocket.RemoteEndPoint, serverSocket, GetCertificate(), false);
+					(IPEndPoint)serverSocket.RemoteEndPoint, serverSocket, GetCertificate(), false, false);
 
 				try {
 					clientTcpConnection.ReceiveAsync((connection, data) => {

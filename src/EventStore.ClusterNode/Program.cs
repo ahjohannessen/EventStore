@@ -318,8 +318,10 @@ namespace EventStore.ClusterNode {
 				builder.WithUnsafeDisableFlushToDisk();
 			if (options.BetterOrdering)
 				builder.WithBetterOrdering();
-			if (options.SslValidateServer)
-				builder.ValidateSslServer();
+			if (options.SslValidateMasterNode)
+				builder.ValidateSslMasterNode();
+			if (options.SslValidateSlaveNode)
+				builder.ValidateSslSlaveNode();
 			if (options.UseInternalSsl)
 				builder.EnableSsl();
 			if (options.DisableInsecureTCP)

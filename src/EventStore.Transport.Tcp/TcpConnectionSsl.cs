@@ -20,6 +20,7 @@ namespace EventStore.Transport.Tcp {
 			IPEndPoint remoteEndPoint,
 			string targetHost,
 			bool validateServer,
+			X509CertificateCollection clientCertificates,
 			TcpClientConnector connector,
 			TimeSpan connectionTimeout,
 			Action<ITcpConnection> onConnectionEstablished,
@@ -29,7 +30,7 @@ namespace EventStore.Transport.Tcp {
 			// ReSharper disable ImplicitlyCapturedClosure
 			connector.InitConnect(remoteEndPoint,
 				(_, socket) => {
-					connection.InitClientSocket(socket, targetHost, validateServer, verbose);
+					connection.InitClientSocket(socket, targetHost, validateServer, clientCertificates, verbose);
 					if (onConnectionEstablished != null)
 						onConnectionEstablished(connection);
 				},
@@ -46,9 +47,10 @@ namespace EventStore.Transport.Tcp {
 			Socket socket,
 			string targetHost,
 			bool validateServer,
+			X509CertificateCollection clientCertificates,
 			bool verbose) {
 			var connection = new TcpConnectionSsl(connectionId, remoteEndPoint, verbose);
-			connection.InitClientSocket(socket, targetHost, validateServer, verbose);
+			connection.InitClientSocket(socket, targetHost, validateServer, clientCertificates, verbose);
 			return connection;
 		}
 
@@ -56,10 +58,11 @@ namespace EventStore.Transport.Tcp {
 			IPEndPoint remoteEndPoint,
 			Socket socket,
 			X509Certificate certificate,
+			bool validateClient,
 			bool verbose) {
 			Ensure.NotNull(certificate, "certificate");
 			var connection = new TcpConnectionSsl(connectionId, remoteEndPoint, verbose);
-			connection.InitServerSocket(socket, certificate, verbose);
+			connection.InitServerSocket(socket, certificate, validateClient, verbose);
 			return connection;
 		}
 
@@ -109,7 +112,7 @@ namespace EventStore.Transport.Tcp {
 			_verbose = verbose;
 		}
 
-		private void InitServerSocket(Socket socket, X509Certificate certificate, bool verbose) {
+		private void InitServerSocket(Socket socket, X509Certificate certificate, bool validateClient, bool verbose) {
 			Ensure.NotNull(certificate, "certificate");
 
 			InitConnectionBase(socket);
@@ -127,7 +130,7 @@ namespace EventStore.Transport.Tcp {
 				_sslStream = new SslStream(new NetworkStream(socket, true), false);
 				try {
 					var enabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls13;
-					_sslStream.BeginAuthenticateAsServer(certificate, false, enabledSslProtocols, true,
+					_sslStream.BeginAuthenticateAsServer(certificate, validateClient, enabledSslProtocols, true,
 						OnEndAuthenticateAsServer, _sslStream);
 				} catch (AuthenticationException exc) {
 					Log.InfoException(exc,
@@ -171,7 +174,7 @@ namespace EventStore.Transport.Tcp {
 			}
 		}
 
-		private void InitClientSocket(Socket socket, string targetHost, bool validateServer, bool verbose) {
+		private void InitClientSocket(Socket socket, string targetHost, bool validateServer, X509CertificateCollection clientCertificates, bool verbose) {
 			Ensure.NotNull(targetHost, "targetHost");
 
 			InitConnectionBase(socket);
@@ -190,7 +193,7 @@ namespace EventStore.Transport.Tcp {
 
 				_sslStream = new SslStream(new NetworkStream(socket, true), false, ValidateServerCertificate, null);
 				try {
-					_sslStream.BeginAuthenticateAsClient(targetHost, OnEndAuthenticateAsClient, _sslStream);
+					_sslStream.BeginAuthenticateAsClient(targetHost, clientCertificates, true, OnEndAuthenticateAsClient, _sslStream);
 				} catch (AuthenticationException exc) {
 					Log.InfoException(exc,
 						"[S{remoteEndPoint}, L{localEndPoint}]: Authentication exception on BeginAuthenticateAsClient.",
