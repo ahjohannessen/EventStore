@@ -134,12 +134,12 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				async Task OnMessage(Message message, CancellationToken ct) {
 					if (message is ClientMessage.NotHandled notHandled &&
 					    RpcExceptions.TryHandleNotHandled(notHandled, out var ex)) {
-						_channel.Writer.Complete(ex);
+						_channel.Writer.TryComplete(ex);
 						return;
 					}
 
 					if (!(message is ClientMessage.ReadStreamEventsForwardCompleted completed)) {
-						_channel.Writer.Complete(
+						_channel.Writer.TryComplete(
 							RpcExceptions.UnknownMessage<ClientMessage.ReadStreamEventsForwardCompleted>(message));
 						return;
 					}
@@ -170,13 +170,13 @@ namespace EventStore.Core.Services.Transport.Grpc {
 							ReadPage(startRevision, OnMessage);
 							return;
 						case ReadStreamResult.StreamDeleted:
-							_channel.Writer.Complete(RpcExceptions.StreamDeleted(_streamName));
+							_channel.Writer.TryComplete(RpcExceptions.StreamDeleted(_streamName));
 							return;
 						case ReadStreamResult.AccessDenied:
-							_channel.Writer.Complete(RpcExceptions.AccessDenied());
+							_channel.Writer.TryComplete(RpcExceptions.AccessDenied());
 							return;
 						default:
-							_channel.Writer.Complete(RpcExceptions.UnknownError(completed.Result));
+							_channel.Writer.TryComplete(RpcExceptions.UnknownError(completed.Result));
 							return;
 					}
 				}
@@ -208,7 +208,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				async Task OnSubscriptionMessage(Message message, CancellationToken ct) {
 					if (message is ClientMessage.NotHandled notHandled &&
 					    RpcExceptions.TryHandleNotHandled(notHandled, out var ex)) {
-						_channel.Writer.Complete(ex);
+						_channel.Writer.TryComplete(ex);
 						return;
 					}
 
@@ -224,12 +224,12 @@ namespace EventStore.Core.Services.Transport.Grpc {
 							async Task OnHistoricalEventsMessage(Message message, CancellationToken ct) {
 								if (message is ClientMessage.NotHandled notHandled &&
 								    RpcExceptions.TryHandleNotHandled(notHandled, out var ex)) {
-									_channel.Writer.Complete(ex);
+									_channel.Writer.TryComplete(ex);
 									return;
 								}
 
 								if (!(message is ClientMessage.ReadStreamEventsForwardCompleted completed)) {
-									_channel.Writer.Complete(
+									_channel.Writer.TryComplete(
 										RpcExceptions.UnknownMessage<ClientMessage.ReadStreamEventsForwardCompleted>(
 											message));
 									return;
@@ -273,13 +273,13 @@ namespace EventStore.Core.Services.Transport.Grpc {
 										Log.Verbose(
 											"Live subscription {subscriptionId} to {streamName} stream deleted.",
 											_subscriptionId, _streamName);
-										_channel.Writer.Complete(RpcExceptions.StreamDeleted(_streamName));
+										_channel.Writer.TryComplete(RpcExceptions.StreamDeleted(_streamName));
 										return;
 									case ReadStreamResult.AccessDenied:
-										_channel.Writer.Complete(RpcExceptions.AccessDenied());
+										_channel.Writer.TryComplete(RpcExceptions.AccessDenied());
 										return;
 									default:
-										_channel.Writer.Complete(RpcExceptions.UnknownError(completed.Result));
+										_channel.Writer.TryComplete(RpcExceptions.UnknownError(completed.Result));
 										return;
 								}
 							}
@@ -303,15 +303,15 @@ namespace EventStore.Core.Services.Transport.Grpc {
 								_subscriptionId, _streamName, dropped.Reason);
 							switch (dropped.Reason) {
 								case SubscriptionDropReason.AccessDenied:
-									_channel.Writer.Complete(RpcExceptions.AccessDenied());
+									_channel.Writer.TryComplete(RpcExceptions.AccessDenied());
 									return;
 								case SubscriptionDropReason.NotFound:
-									_channel.Writer.Complete(RpcExceptions.StreamNotFound(_streamName));
+									_channel.Writer.TryComplete(RpcExceptions.StreamNotFound(_streamName));
 									return;
 								case SubscriptionDropReason.Unsubscribed:
 									return;
 								default:
-									_channel.Writer.Complete(RpcExceptions.UnknownError(dropped.Reason));
+									_channel.Writer.TryComplete(RpcExceptions.UnknownError(dropped.Reason));
 									return;
 							}
 						case ClientMessage.StreamEventAppeared appeared: {
@@ -347,7 +347,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 							return;
 						}
 						default:
-							_channel.Writer.Complete(
+							_channel.Writer.TryComplete(
 								RpcExceptions.UnknownMessage<ClientMessage.SubscriptionConfirmation>(message));
 							return;
 					}

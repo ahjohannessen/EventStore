@@ -163,12 +163,12 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				async Task OnMessage(Message message, CancellationToken ct) {
 					if (message is ClientMessage.NotHandled notHandled &&
 					    RpcExceptions.TryHandleNotHandled(notHandled, out var ex)) {
-						_channel.Writer.Complete(ex);
+						_channel.Writer.TryComplete(ex);
 						return;
 					}
 
 					if (!(message is ClientMessage.FilteredReadAllEventsForwardCompleted completed)) {
-						_channel.Writer.Complete(
+						_channel.Writer.TryComplete(
 							RpcExceptions.UnknownMessage<ClientMessage.FilteredReadAllEventsForwardCompleted>(
 								message));
 						return;
@@ -220,10 +220,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 							return;
 						case FilteredReadAllResult.AccessDenied:
-							_channel.Writer.Complete(RpcExceptions.AccessDenied());
+							_channel.Writer.TryComplete(RpcExceptions.AccessDenied());
 							return;
 						default:
-							_channel.Writer.Complete(RpcExceptions.UnknownError(completed.Result));
+							_channel.Writer.TryComplete(RpcExceptions.UnknownError(completed.Result));
 							return;
 					}
 				}
@@ -255,7 +255,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				async Task OnSubscriptionMessage(Message message, CancellationToken cancellationToken) {
 					if (message is ClientMessage.NotHandled notHandled &&
 					    RpcExceptions.TryHandleNotHandled(notHandled, out var ex)) {
-						_channel.Writer.Complete(ex);
+						_channel.Writer.TryComplete(ex);
 						return;
 					}
 
@@ -273,12 +273,12 @@ namespace EventStore.Core.Services.Transport.Grpc {
 							async Task OnHistoricalEventsMessage(Message message, CancellationToken ct) {
 								if (message is ClientMessage.NotHandled notHandled &&
 								    RpcExceptions.TryHandleNotHandled(notHandled, out var ex)) {
-									_channel.Writer.Complete(ex);
+									_channel.Writer.TryComplete(ex);
 									return;
 								}
 
 								if (!(message is ClientMessage.FilteredReadAllEventsForwardCompleted completed)) {
-									_channel.Writer.Complete(
+									_channel.Writer.TryComplete(
 										RpcExceptions
 											.UnknownMessage<ClientMessage.FilteredReadAllEventsForwardCompleted>(
 												message));
@@ -321,10 +321,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 											caughtUpSource.TrySetResult(caughtUp);
 										}
 									case FilteredReadAllResult.AccessDenied:
-										_channel.Writer.Complete(RpcExceptions.AccessDenied());
+										_channel.Writer.TryComplete(RpcExceptions.AccessDenied());
 										return;
 									default:
-										_channel.Writer.Complete(RpcExceptions.UnknownError(completed.Result));
+										_channel.Writer.TryComplete(RpcExceptions.UnknownError(completed.Result));
 										return;
 								}
 							}
@@ -345,12 +345,12 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						case ClientMessage.SubscriptionDropped dropped:
 							switch (dropped.Reason) {
 								case SubscriptionDropReason.AccessDenied:
-									_channel.Writer.Complete(RpcExceptions.AccessDenied());
+									_channel.Writer.TryComplete(RpcExceptions.AccessDenied());
 									return;
 								case SubscriptionDropReason.Unsubscribed:
 									return;
 								default:
-									_channel.Writer.Complete(RpcExceptions.UnknownError(dropped.Reason));
+									_channel.Writer.TryComplete(RpcExceptions.UnknownError(dropped.Reason));
 									return;
 							}
 						case ClientMessage.StreamEventAppeared appeared: {
@@ -393,7 +393,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 								checkpointReached.Position.Value.PreparePosition)).ConfigureAwait(false);
 							return;
 						default:
-							_channel.Writer.Complete(
+							_channel.Writer.TryComplete(
 								RpcExceptions.UnknownMessage<ClientMessage.SubscriptionConfirmation>(message));
 							return;
 					}
